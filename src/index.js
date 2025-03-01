@@ -24,7 +24,6 @@ function verifyIfExistsAccountCPF(request, response, next) {
 
 app.post('/account', (request, response) => {
   const { cpf, name } = request.body;
-  console.log(request.body);
 
   const customerAlreadyExists = customers.some(
     customer => cpf === customer.cpf
@@ -69,6 +68,42 @@ app.post('/deposit', verifyIfExistsAccountCPF, (request, response) => {
 
   customer.statement.push(statementOperation);
   return response.status(201).send();
+});
+
+app.get('/statement/date', verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request;
+  const { date } = request.query;
+
+  const dateFormat = new Date(date + ' 00:00:00');
+
+  const statement = customer.statement.filter(
+    statement =>
+      statement.created_at.toDateString() ===
+      new Date(dateFormat).toDateString()
+  );
+
+  return response.json(statement);
+});
+
+app.put('/account', verifyIfExistsAccountCPF, (request, response) => {
+  const { name } = request.body;
+
+  if (!name) {
+    return response.status(400).json({ error: 'Name not informed!' });
+  }
+
+  if (name === request.customer.name) {
+    return response.status(400).json({ error: 'Name already in use!' });
+  }
+
+  request.customer.name = name;
+  return response.status(201).send();
+});
+
+app.delete('/account', verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request;
+
+  customers.splice(customer, 1);
 });
 
 app.listen(3333);
